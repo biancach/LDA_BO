@@ -9,25 +9,31 @@ class PCA_AE:
         self.pca = PCA(n_components=latent_dim)
         self.scaler = StandardScaler()
         self.original_shape = None
-        
-        self.mask = mask if mask is not None else slice(None) 
 
+        self.mask = mask.flatten() if mask is not None else None
+        self.masked = mask is not None
 
     def train(self, x):
-        self.original_shape = x.shape[1:]
+        self.original_shape = x.shape[1:]  # (C, H, W)
+        batch_size, C, H, W = x.shape
+        x_flat = x.reshape(batch_size, C, H * W)  # (B, C, H*W)
 
-        n_samples = x.shape[0]
-        x_flat = x[:,:,self.mask].reshape(n_samples, -1)
+        if self.masked:
+            x_flat = x_flat[:, :, self.mask]  # apply mask
 
+        x_flat = x_flat.reshape(batch_size, -1)
         x_scaled = self.scaler.fit_transform(x_flat)
         self.pca.fit(x_scaled)
 
     def encode(self, x):
         batch_size, C, H, W = x.shape
-        x = x.reshape(batch_size, C, H * W)  # (B, C, H*W)
-        x = x[:, :, self.mask.flatten()]  # (B, C, n_valid_pixels)
-        x = x.reshape(batch_size, -1)
-        x_scaled = self.scaler.transform(x)
+        x_flat = x.reshape(batch_size, C, H * W)
+
+        if self.masked:
+            x_flat = x_flat[:, :, self.mask]
+
+        x_flat = x_flat.reshape(batch_size, -1)
+        x_scaled = self.scaler.transform(x_flat)
         z = self.pca.transform(x_scaled)
         return z
 
@@ -36,20 +42,22 @@ class PCA_AE:
         C, H, W = self.original_shape
 
         decoded = self.pca.inverse_transform(z)
-        decoded = self.scaler.inverse_transform(decoded)  # (B, C * n_valid)
-
+        decoded = self.scaler.inverse_transform(decoded)
         decoded = decoded.reshape(batch_size, C, -1)
 
-        x_full = np.full((batch_size, C, H * W), np.nan, dtype=decoded.dtype)
-        x_full[:, :, self.mask.flatten()] = decoded
+        if self.masked:
+            x_full = np.full((batch_size, C, H * W), np.nan, dtype=decoded.dtype)
+            x_full[:, :, self.mask] = decoded
+        else:
+            x_full = decoded
 
         return x_full.reshape(batch_size, C, H, W)
-    
+
     def forward(self, x):
         z = self.encode(x)
         x_recon = self.decode(z)
         return x_recon, z
-    
+
     def save(self, path):
         joblib.dump({
             'pca': self.pca,
@@ -62,9 +70,8 @@ class PCA_AE:
     @classmethod
     def load(cls, path):
         data = joblib.load(path)
-        obj = cls(latent_dim=data['latent_dim'])
+        obj = cls(latent_dim=data['latent_dim'], mask=data['mask'])
         obj.pca = data['pca']
         obj.scaler = data['scaler']
         obj.original_shape = data['original_shape']
-        obj.mask = data['mask']
         return obj

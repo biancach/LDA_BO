@@ -7,9 +7,13 @@ class MLP_AE(nn.Module):
     def __init__(self, input_dim, latent_dim, mask=None):
         super(MLP_AE, self).__init__()
 
-        self.mask = mask if mask is not None else slice(None) 
+        if mask is not None and mask.ndim > 1:
+            mask = mask.flatten()
+
+        self.mask = mask  # Should now always be 1D or None
+        self.masked = self.mask is not None
         self.original_shape = None
-        
+
         # Encoder
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
@@ -17,41 +21,53 @@ class MLP_AE(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(256, latent_dim)
         )
-        
+
         # Decoder
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 256),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Linear(256, input_dim)
         )
-    
+
     def encode(self, x):
-        self.original_shape = x.shape[2:]
-        x = x[:, :, self.mask].reshape(x.shape[0], -1)
-        z = self.encoder(x)
+        # x: (batch_size, 2, H, W)
+        batch_size, C, H, W = x.shape
+        self.original_shape = (H, W)
+
+        x_flat = x.reshape(batch_size, C, H * W)  # (B, 2, H*W)
+        if self.masked:
+            x_flat = x_flat[:, :, self.mask]  # (B, 2, n_valid)
+        
+        x_flat = x_flat.reshape(batch_size, -1)  # (B, 2 * n_valid)
+        z = self.encoder(x_flat)
         return z
 
     def decode(self, z):
-        decoded = self.decoder(z)  # shape: (batch_size, 2 * num_valid_pixels)
+        # z: (batch_size, latent_dim)
+        decoded = self.decoder(z)  # (batch_size, 2 * n_valid)
         batch_size = decoded.shape[0]
         H, W = self.original_shape
-        n_valid = self.mask.sum()
 
-        # Split decoded output into u and v
-        decoded = decoded.view(batch_size, 2, n_valid)  # (batch_size, 2, num_valid_pixels)
+        if self.masked:
+            n_valid = self.mask.sum()
+        else:
+            n_valid = decoded.shape[1] // 2
 
-        x = torch.full((batch_size, 2, H * W), float('nan'), dtype=decoded.dtype, device=decoded.device)
+        decoded = decoded.view(batch_size, 2, n_valid)  # (B, 2, n_valid)
 
-        # Fill in only the valid locations (broadcasting across batch and channel)
-        x[:, :, self.mask.flatten()] = decoded
+        if self.masked:
+            x_full = torch.full((batch_size, 2, H * W), float('nan'), dtype=decoded.dtype, device=decoded.device)
+            x_full[:, :, self.mask] = decoded
+        else:
+            x_full = decoded
 
-        # Reshape to (batch_size, 2, H, W)
-        return x.view(batch_size, 2, H, W)
+        return x_full.view(batch_size, 2, H, W)
 
     def forward(self, x):
         z = self.encode(x)
         x_recon = self.decode(z)
         return x_recon, z
+
 
     def train_model(self, train_loader, val_loader=None, epochs=1000, lr=1e-4, device='cpu', 
                     loss_fn=nn.MSELoss(), patience=10, save_path=None):
