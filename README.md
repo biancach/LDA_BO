@@ -53,7 +53,7 @@ Implemented reduced-order models include:
 - MLP Autoencoders: Fully connected neural networks for nonlinear latent representations
 - CNN Autoencoders: Convolutional architectures suited for spatially structured flow data
 
-Model checkpoints and training logs are saved in src/models/checkpoints/.
+Model checkpoints and training logs are saved in `src/models/checkpoints/`.
 
 ### Examples
 
