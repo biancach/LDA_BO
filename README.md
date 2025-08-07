@@ -28,14 +28,15 @@ This repository contains code and data for reduced-order modeling (ROM) and Lagr
 ### Installation
 
 To set up the environment, use `conda`:
-
 ```bash
 conda env create -f environment.yml
 conda activate rom-flow
+```
 
 Alternatively, install dependencies using pip:
-
+```bash
 pip install -r requirements.txt
+```
 
 ### Data Overview
 
