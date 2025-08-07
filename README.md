@@ -57,6 +57,10 @@ Implemented reduced-order models include:
 
 Model checkpoints and training logs are saved in `src/models/checkpoints/`.
 
+### Bayesian Optimization
+
+The `GPOptimizer` and `DeepGPOptimizer` classes are in the `optimizer.py` script under `src`.
+
 ### Examples
 
 The `examples/` directory contains organized Jupyter notebooks for:
