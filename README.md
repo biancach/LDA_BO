@@ -10,16 +10,17 @@ This repository contains code and data for reduced-order modeling (ROM) and Lagr
 │   ├── fvcom/             # FVCOM ocean model data  
 │   ├── kolmogorov/        # 2D Kolmogorov flow velocity and vorticity  
 │   └── massachusetts/     # GIS shapefiles for plotting
-├── environment.yml        # Conda environment file  
 ├── examples/              # Jupyter notebooks and python scripts demonstrating usage  
 │   ├── fvcom/  
 │   └── kolmogorov/  
 ├── figures/               # Saved plots and visualizations  
+├── results/               # Saved plots and visualizations  
 ├── src/                   # Source code  
 │   ├── models/            # PCA, MLP, CNN architectures and saved checkpoints  
 │   ├── utils.py           # Utility functions  
 │   ├── optimizer.py       # BO routines  
 │   ├── inputs.py          # Wrapper class for Gaussian inputs  
+├── environment.yml        # Conda environment file  
 ├── README.md              # This file  
 ```
 
