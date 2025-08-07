@@ -45,8 +45,9 @@ pip install -r requirements.txt
 - `data/kolmogorov/`: Synthetic 2D turbulence (u, v, vorticity)  
 - `data/massachusetts/`: GIS shapefiles for regional mapping and domain boundaries
 
+These files can be accessed here (links coming soon).
 
-### Models
+### Reduced-Order Models
 
 Implemented reduced-order models include:
 
@@ -65,6 +66,10 @@ The `examples/` directory contains organized Jupyter notebooks for:
 - Performing trajectory optimization using Bayesian Optimization (BO)  
 
 Each subdirectory (`fvcom/`, `kolmogorov/`) contains examples for its respective system.
+
+### Results and Figures
+
+The `results/` and `figures/` directories contain the saved datasets and figures produced by running the examples in (`fvcom/`, `kolmogorov/`). These files can be accessed here (links coming soon).
 
 ### Citation
 If you use this repository in your research, please cite the appropriate publications (citation coming soon).
