@@ -1,28 +1,27 @@
-# Reduced-Order Modeling and Optimization of Geophysical Flows
+# Reduced-Order Modeling of Turbulent and Ocean Flows and Lagrangian Data Assimilation with Bayesian Optimization 
 
-This repository contains code and data for reduced-order modeling (ROM) and Bayesian optimization of two dynamical systems: **Kolmogorov flow** and **oceanic flow from the FVCOM model**. The goal is to develop compact representations of complex flow fields and efficiently optimize trajectories or model parameters using machine learning methods.
+This repository contains code and data for reduced-order modeling (ROM) and Lagrangian data assimiliation with Bayesian optimization for two dynamical systems: **Kolmogorov flow** and **ocean flow from the Finite Volume Community Ocean Model**. The goal is to develop compact representations of complex flow fields and efficiently assimilate trajectories using machine learning methods.
 
 ## Directory Structure
 
 ```text
-.
+
 ├── data/                  # Preprocessed datasets  
 │   ├── fvcom/             # FVCOM ocean model data  
 │   ├── kolmogorov/        # 2D Kolmogorov flow velocity and vorticity  
-│   └── massachusetts/     # GIS shapefiles for plotting or domain extraction  
+│   └── massachusetts/     # GIS shapefiles for plotting
 ├── environment.yml        # Conda environment file  
-├── examples/              # Jupyter notebooks demonstrating usage  
+├── examples/              # Jupyter notebooks and python scripts demonstrating usage  
 │   ├── fvcom/  
 │   └── kolmogorov/  
 ├── figures/               # Saved plots and visualizations  
-├── requirements.txt       # Python package dependencies  
 ├── src/                   # Source code  
 │   ├── models/            # PCA, MLP, CNN architectures and saved checkpoints  
 │   ├── utils.py           # Utility functions  
 │   ├── optimizer.py       # BO routines  
-│   ├── inputs.py          # Input pipelines or parameter setup  
+│   ├── inputs.py          # Wrapper class for Gaussian inputs  
 ├── README.md              # This file  
-
+'''
 
 ## Getting Started
 
