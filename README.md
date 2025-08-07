@@ -21,7 +21,7 @@ This repository contains code and data for reduced-order modeling (ROM) and Lagr
 │   ├── optimizer.py       # BO routines  
 │   ├── inputs.py          # Wrapper class for Gaussian inputs  
 ├── README.md              # This file  
-'''
+```
 
 ## Getting Started
 
