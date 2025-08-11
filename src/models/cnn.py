@@ -75,11 +75,15 @@ class CNN_AE(nn.Module):
         return x_recon, z
 
     def train_model(self, train_loader, val_loader=None, epochs=1000, lr=1e-4, device='cpu',
-                    loss_fn=nn.MSELoss(), patience=10, save_path=None):
+                    loss_fn=nn.MSELoss(), patience=20, save_path=None,
+                    lr_factor=0.5, lr_patience=10):
         self.to(device)
 
-        optimizer = optim.Adam(self.parameters(), lr=lr)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=10)
+        optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=1e-5)
+
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=lr_factor, patience=lr_patience, verbose=True
+        )
 
         best_val_loss = float('inf')
         patience_counter = 0
@@ -113,9 +117,14 @@ class CNN_AE(nn.Module):
 
                 avg_val_loss = val_loss / len(val_loader)
                 validation_losses.append(avg_val_loss)
+
+                # Update LR scheduler based on validation loss
                 scheduler.step(avg_val_loss)
 
-                print(f"Epoch [{epoch+1}/{epochs}], Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
+                print(f"Epoch [{epoch+1}/{epochs}], "
+                    f"Training Loss: {avg_train_loss:.4f}, "
+                    f"Validation Loss: {avg_val_loss:.4f}, "
+                    f"LR: {optimizer.param_groups[0]['lr']:.6e}")
 
                 # Early stopping
                 if avg_val_loss < best_val_loss:
@@ -126,12 +135,15 @@ class CNN_AE(nn.Module):
                 else:
                     patience_counter += 1
                     if patience_counter >= patience:
-                        print("Early stopping triggered")
+                        print(f"Early stopping triggered at epoch {epoch+1}")
                         break
             else:
-                print(f"Epoch [{epoch+1}/{epochs}], Training Loss: {avg_train_loss:.4f}")
+                print(f"Epoch [{epoch+1}/{epochs}], "
+                    f"Training Loss: {avg_train_loss:.4f}, "
+                    f"LR: {optimizer.param_groups[0]['lr']:.6e}")
 
         return training_losses, validation_losses
+
     
     def evaluate(self, x, device='cpu'):
         self.eval()

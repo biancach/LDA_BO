@@ -17,7 +17,7 @@ class MLP_AE(nn.Module):
         # Encoder
         self.encoder = nn.Sequential(
             nn.Linear(input_dim, 256),
-            nn.LeakyReLU(negative_slope=0.01),
+            nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(256, latent_dim)
         )
@@ -25,7 +25,7 @@ class MLP_AE(nn.Module):
         # Decoder
         self.decoder = nn.Sequential(
             nn.Linear(latent_dim, 256),
-            nn.LeakyReLU(negative_slope=0.01),
+            nn.ReLU(),
             nn.Linear(256, input_dim)
         )
 
@@ -69,10 +69,16 @@ class MLP_AE(nn.Module):
         return x_recon, z
 
 
-    def train_model(self, train_loader, val_loader=None, epochs=1000, lr=1e-4, device='cpu', 
-                    loss_fn=nn.MSELoss(), patience=10, save_path=None):
+    def train_model(self, train_loader, val_loader=None, epochs=1000, lr=1e-3, device='cpu', 
+                    loss_fn=nn.MSELoss(), patience=20, save_path=None, lr_patience=5, lr_factor=0.5):
         self.to(device)
-        optimizer = optim.Adam(self.parameters(), lr=lr)
+        optimizer = optim.Adam(self.parameters(), lr=lr, weight_decay=1e-5)
+
+        # Scheduler: reduce LR by lr_factor if val loss doesn't improve for lr_patience epochs
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode='min', factor=lr_factor, patience=lr_patience, verbose=True
+        )
+
         best_val_loss = float('inf')
         epochs_without_improvement = 0
         
@@ -106,8 +112,14 @@ class MLP_AE(nn.Module):
                         val_loss += loss.item() * batch_data.size(0)
                 avg_val_loss = val_loss / len(val_loader.dataset)
                 validation_losses.append(avg_val_loss)
-                
-                print(f"Epoch {epoch+1}/{epochs} - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
+
+                # Step the scheduler based on validation loss
+                scheduler.step(avg_val_loss)
+
+                print(f"Epoch {epoch+1}/{epochs} - "
+                    f"Train Loss: {avg_train_loss:.4f} - "
+                    f"Val Loss: {avg_val_loss:.4f} - "
+                    f"LR: {optimizer.param_groups[0]['lr']:.6f}")
                 
                 # Early stopping
                 if avg_val_loss < best_val_loss:
@@ -121,10 +133,12 @@ class MLP_AE(nn.Module):
                         print(f"Early stopping at epoch {epoch+1}")
                         break
             else:
-                print(f"Epoch {epoch+1}/{epochs} - Train Loss: {avg_train_loss:.4f}")
+                print(f"Epoch {epoch+1}/{epochs} - "
+                    f"Train Loss: {avg_train_loss:.4f} - "
+                    f"LR: {optimizer.param_groups[0]['lr']:.6f}")
         
-        # Optionally, return loss histories
         return training_losses, validation_losses
+
     
     def evaluate(self, x, device='cpu'):
         self.eval()

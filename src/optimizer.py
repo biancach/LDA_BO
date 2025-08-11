@@ -77,7 +77,9 @@ class Optimizer:
     
     def decode(self, z):
         pred = self.D(torch.tensor(z).float().reshape(1, -1).to(self.device))
-        pred = pred.cpu().detach().numpy()[0, :, :, :]
+        if isinstance(pred, torch.Tensor):
+            pred = pred.cpu().detach().numpy()
+        pred = pred[0, :, :, :]
         pred = self.scaler.inverse_transform(pred.reshape(-1, 2)).reshape(2, *self.grid_x.shape)
         u_pred, v_pred = pred[0, :, :], pred[1, :, :]
         u_pred[self.mask] = 0

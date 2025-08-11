@@ -242,37 +242,50 @@ def vort_FVCOM(u, v, x, y):
     dv_dx = np.gradient(v, dx, axis=1)
     w = dv_dx - du_dy
 
-    threshold = 5 * np.nanstd(w)
-    w[np.abs(w) > threshold] = np.nan
+    # threshold = 5 * np.nanstd(w)
+    # w[np.abs(w) > threshold] = np.nan
     w[mask] = np.nan
     return w
 
 def streamfunction_FVCOM(omega, x, y):
-    """Solve Poisson eq for streamfunction from vorticity."""
-    mask = ~np.isnan(omega)
+    """Solve Poisson equation for streamfunction from vorticity.
+       Handles omega as 2D (ny, nx) or 3D (nt, ny, nx).
+    """
+    # Ensure omega is at least 3D: (nt, ny, nx)
+    if omega.ndim == 2:
+        omega = omega[None, :, :]  # add time axis
+    
+    nt, ny, nx = omega.shape
+    mask = ~np.isnan(omega[0])  # same mask for all timesteps
     dx = x[0, 1] - x[0, 0]
     dy = y[1, 0] - y[0, 0]
-    ny, nx = omega.shape
 
+    # Map masked points to equation indices
     idx_map = -np.ones_like(mask, dtype=int)
     idx_map[mask] = np.arange(np.sum(mask))
 
+    # Assemble sparse matrix A only once
     A = lil_matrix((np.sum(mask), np.sum(mask)))
-    b = -omega[mask].flatten()
-
     for j in range(ny):
         for i in range(nx):
-            if not mask[j, i]: continue
+            if not mask[j, i]:
+                continue
             row = idx_map[j, i]
             A[row, row] = -2 / dx**2 - 2 / dy**2
-            for di, dj, coeff in [(-1, 0, 1/dx**2), (1, 0, 1/dx**2), (0, -1, 1/dy**2), (0, 1, 1/dy**2)]:
+            for di, dj, coeff in [(-1, 0, 1/dx**2), (1, 0, 1/dx**2),
+                                  (0, -1, 1/dy**2), (0, 1, 1/dy**2)]:
                 ni, nj = i + di, j + dj
                 if 0 <= ni < nx and 0 <= nj < ny and mask[nj, ni]:
                     A[row, idx_map[nj, ni]] = coeff
+    A = A.tocsr()
 
-    psi_flat = spsolve(A.tocsr(), b)
-    psi = np.full_like(omega, np.nan)
-    psi[mask] = psi_flat
-    return psi
+    # Solve for each timestep
+    psi_all = np.full_like(omega, np.nan)
+    for t in range(nt):
+        b = -omega[t][mask].flatten()
+        psi_flat = spsolve(A, b)
+        psi_t = np.full((ny, nx), np.nan)
+        psi_t[mask] = psi_flat
+        psi_all[t] = psi_t
 
-
+    return psi_all if psi_all.shape[0] > 1 else psi_all[0]
