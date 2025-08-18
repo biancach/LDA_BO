@@ -15,10 +15,10 @@ from src.utils import *
 from src.optimizer import GPOptimizer, DeepGPOptimizer
 
 ####
-tstep = 500
-latent_dim = 50
+tstep = 9407
+latent_dim = 20
 acquisition_function = 'LCB'
-deep = True
+deep = False
 save_data = True
 #####
 

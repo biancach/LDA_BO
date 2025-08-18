@@ -11,11 +11,6 @@ import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 from pyproj import Proj, transform
-import geopandas as gpd
-
-project_root = os.path.abspath('../../../')  # or the relative path to your root from the notebook folder
-states = gpd.read_file(f'{project_root}/data/massachusetts/s_08mr23.shp')
-mass = states[states['NAME']=='Massachusetts']
 
 # ============================ #
 #        DATA TRANSFORMS      #
@@ -138,24 +133,37 @@ def plot_field(ax, data, x, y, xmin, xmax, ymin, ymax, vmin=None, vmax=None, cma
     ax.set_aspect('equal')
     return c
 
-def plot_trajectories(ax, data, x, y, trajectories, xmin, xmax, ymin, ymax, vmin=None, vmax=None, cmap='jet'):
+def plot_trajectories(ax, data, x, y, trajectories, xmin, xmax, ymin, ymax, vmin=None, vmax=None, cmap='jet', label=''):
     """Plot scalar field with overlaid trajectories."""
     c = plot_field(ax, data, x, y, xmin, xmax, ymin, ymax, vmin, vmax, cmap)
     
     for _, key in enumerate(trajectories):
         traj = trajectories[key]
-        ax.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if key == 0 else '')
-        ax.plot(traj[-1, 0], traj[-1, 1], '*r', label='End' if key == 0 else '')
-        ax.scatter(traj[:, 0], traj[:, 1], c='k', s=0.5)
+        ax.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if (key == 0 and label=='') else '')
+        ax.plot(traj[-1, 0], traj[-1, 1], '*r', label='End' if (key == 0 and label=='') else '')
+        ax.scatter(traj[:, 0], traj[:, 1], c='k', s=0.5, label=label if key == 0 else '')
 
     return c
 
-def plot_trajectories_lines(trajectories, color='k'):
+def plot_trajectories_lines(trajectories, color='k', label=''):
     for _, key in enumerate(trajectories):
         traj = trajectories[key]
-        plt.scatter(traj[:, 0], traj[:, 1], c=color, s=0.5)
-        plt.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if key == 0 else '')
+        plt.scatter(traj[:, 0], traj[:, 1], c=color, s=0.5, label=label if key == 0 else '')
+        plt.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if (key == 0 and label=='') else '')
 
+def file_naming(point_indices, latent_dim, tstep):
+    """
+    Create a file naming extension from point_indices as x_i1_i2_i3_y_j1_j2_j3.
+
+    Args:
+        point_indices (list of tuple): List of (xi, yi) tuples.
+
+    Returns:
+        str: Extension string.
+    """
+    x_indices = '_'.join(str(xi) for xi, _ in point_indices)
+    y_indices = '_'.join(str(yi) for _, yi in point_indices)
+    return f"latent_{latent_dim}_tstep_{tstep}_x_{x_indices}_y_{y_indices}"
 
 # ============================ #
 #         TRAJECTORIES        #
@@ -217,6 +225,17 @@ def custom_KDE(data, weights=None, bw=None):
 
     return FFTKDE(bw=bw).fit(data, weights)
 
+def pattern_corr(a, b):
+    # Flatten spatial dimensions, compute centered pattern correlation
+    a_flat = a.reshape(a.shape[0], -1)
+    b_flat = b.reshape(b.shape[0], -1)
+    # Remove mean over spatial dimensions
+    a_centered = a_flat - a_flat.mean(axis=1, keepdims=True)
+    b_centered = b_flat - b_flat.mean(axis=1, keepdims=True)
+    # Compute correlation for each sample
+    num = np.sum(a_centered * b_centered, axis=1)
+    denom = np.sqrt(np.sum(a_centered**2, axis=1) * np.sum(b_centered**2, axis=1))
+    return num / denom
 
 # ============================ #
 #       FLUID MECHANICS        #
