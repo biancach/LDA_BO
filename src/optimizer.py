@@ -168,14 +168,16 @@ class GPOptimizer(Optimizer):
         super().__init__(*args, **kwargs)
         
         if self.train_init:
-            self.kernel = GPy.kern.RBF(input_dim=self.X.shape[1], ARD=True)
+            # self.kernel = GPy.kern.RBF(input_dim=self.X.shape[1], ARD=True)
+            self.kernel = GPy.kern.Matern32(input_dim=self.X.shape[1], ARD=True)
             self.gp = GPy.models.GPRegression(self.X, self.Y, self.kernel)
             self.gp.optimize_restarts(verbose=False, messages=False)
 
     def set_XY(self, X, Y):
         self.X = X
         self.Y = Y
-        self.kernel = GPy.kern.RBF(input_dim=self.X.shape[1], ARD=True)
+        # self.kernel = GPy.kern.RBF(input_dim=self.X.shape[1], ARD=True)
+        self.kernel = GPy.kern.Matern32(input_dim=self.X.shape[1], ARD=True)
         self.gp = GPy.models.GPRegression(self.X, self.Y, self.kernel)
         self.gp.set_XY(X, Y)
 

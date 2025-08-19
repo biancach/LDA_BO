@@ -18,7 +18,7 @@ from src.optimizer import GPOptimizer, DeepGPOptimizer
 tstep = 9407
 latent_dim = 20
 acquisition_function = 'LCB'
-deep = False
+deep = True
 save_data = True
 #####
 
