@@ -76,4 +76,9 @@ Each subdirectory (`fvcom/`, `kolmogorov/`) contains examples for its respective
 The `results/` and `figures/` directories contain the saved datasets and figures produced by running the examples in (`fvcom/`, `kolmogorov/`). These files can be accessed here (links coming soon).
 
 ### Citation
-If you use this repository in your research, please cite the appropriate publications (citation coming soon).
+If you use this repository in your research, please cite the appropriate publications
+
+**Bianca Champenois and Themistoklis P. Sapsis**.  
+*Reconstructing Ocean Flow from Observed Lagrangian Trajectories*.  
+In *OCEANS 2025 Brest*. IEEE, 2025, pp. 1–10.  
+[https://doi.org/10.1109/OCEANS58557.2025.11104573](https://doi.org/10.1109/OCEANS58557.2025.11104573)
