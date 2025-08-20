@@ -45,7 +45,7 @@ pip install -r requirements.txt
 - `data/kolmogorov/`: Synthetic 2D turbulence (u, v, vorticity)  
 - `data/massachusetts/`: GIS shapefiles for regional mapping and domain boundaries
 
-These files can be accessed here (links coming soon).
+These files can be accessed [here](https://www.dropbox.com/scl/fi/83xhtwwtpafphpxvpb6fr/LDA_BO_data.zip?rlkey=432yomxl2hp5yo0craumnay0h&st=qcrles7v&dl=0).
 
 ### Reduced-Order Models
 

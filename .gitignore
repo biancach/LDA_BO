@@ -18,6 +18,7 @@ data/massachusetts/*
 *.gif
 *.mat
 *.joblib
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
