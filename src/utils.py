@@ -249,62 +249,83 @@ def vort(u, v, kx, ky):
     return np.fft.ifft2(fw).real
 
 def vort_FVCOM(u, v, x, y):
-    """Finite-difference vorticity for FVCOM."""
-    mask = np.isnan(u) | np.isnan(v)
-    u = np.where(mask, np.nan, u)
-    v = np.where(mask, np.nan, v)
+    """
+    Finite-difference vorticity on a uniform rectilinear grid.
+    u, v: arrays of shape (..., ny, nx)  [time optional]
+    x, y: 2D meshgrid arrays of shape (ny, nx)
+    """
+    # grid spacing (assumes uniform)
+    dx = np.mean(np.diff(x, axis=1))
+    dy = np.mean(np.diff(y, axis=0))
 
-    dx = x[0, 1] - x[0, 0]
-    dy = y[1, 0] - y[0, 0]
+    # handle whether time dimension is present
+    if u.ndim == 2:  # (ny, nx)
+        du_dy = np.gradient(u, dy, axis=0)
+        dv_dx = np.gradient(v, dx, axis=1)
+        w = dv_dx - du_dy
 
-    du_dy = np.gradient(u, dy, axis=0)
-    dv_dx = np.gradient(v, dx, axis=1)
-    w = dv_dx - du_dy
+    elif u.ndim == 3:  # (nt, ny, nx)
+        du_dy = np.gradient(u, dy, axis=1)  # y is axis=1
+        dv_dx = np.gradient(v, dx, axis=2)  # x is axis=2
+        w = dv_dx - du_dy
 
-    # threshold = 5 * np.nanstd(w)
-    # w[np.abs(w) > threshold] = np.nan
-    w[mask] = np.nan
+    else:
+        raise ValueError("u,v must be (ny,nx) or (nt,ny,nx)")
+
     return w
 
+
 def streamfunction_FVCOM(omega, x, y):
-    """Solve Poisson equation for streamfunction from vorticity.
-       Handles omega as 2D (ny, nx) or 3D (nt, ny, nx).
+    """
+    Solve Poisson equation for streamfunction from vorticity.
+    Works for 2D (ny, nx) or 3D (nt, ny, nx) omega arrays.
     """
     # Ensure omega is at least 3D: (nt, ny, nx)
     if omega.ndim == 2:
         omega = omega[None, :, :]  # add time axis
-    
+
     nt, ny, nx = omega.shape
-    mask = ~np.isnan(omega[0])  # same mask for all timesteps
+    mask = ~np.isnan(omega[0])  # assume mask same for all timesteps
     dx = x[0, 1] - x[0, 0]
     dy = y[1, 0] - y[0, 0]
 
-    # Map masked points to equation indices
+    # Flattened index map: only valid (masked) points get an equation
     idx_map = -np.ones_like(mask, dtype=int)
     idx_map[mask] = np.arange(np.sum(mask))
 
-    # Assemble sparse matrix A only once
+    # Build sparse matrix A once
     A = lil_matrix((np.sum(mask), np.sum(mask)))
     for j in range(ny):
         for i in range(nx):
             if not mask[j, i]:
                 continue
+
             row = idx_map[j, i]
             A[row, row] = -2 / dx**2 - 2 / dy**2
-            for di, dj, coeff in [(-1, 0, 1/dx**2), (1, 0, 1/dx**2),
-                                  (0, -1, 1/dy**2), (0, 1, 1/dy**2)]:
-                ni, nj = i + di, j + dj
-                if 0 <= ni < nx and 0 <= nj < ny and mask[nj, ni]:
-                    A[row, idx_map[nj, ni]] = coeff
+
+            # West neighbor
+            if i > 0 and mask[j, i-1]:
+                A[row, idx_map[j, i-1]] = 1 / dx**2
+            # East neighbor
+            if i < nx - 1 and mask[j, i+1]:
+                A[row, idx_map[j, i+1]] = 1 / dx**2
+            # South neighbor
+            if j > 0 and mask[j-1, i]:
+                A[row, idx_map[j-1, i]] = 1 / dy**2
+            # North neighbor
+            if j < ny - 1 and mask[j+1, i]:
+                A[row, idx_map[j+1, i]] = 1 / dy**2
+            # Else: boundary condition ψ = 0 → nothing added
+
     A = A.tocsr()
 
-    # Solve for each timestep
+    # Solve timestep by timestep
     psi_all = np.full_like(omega, np.nan)
     for t in range(nt):
         b = -omega[t][mask].flatten()
-        psi_flat = spsolve(A, b)
+        psi_valid = spsolve(A, b)
         psi_t = np.full((ny, nx), np.nan)
-        psi_t[mask] = psi_flat
+        psi_t[mask] = psi_valid
         psi_all[t] = psi_t
 
-    return psi_all if psi_all.shape[0] > 1 else psi_all[0]
+    return psi_all if nt > 1 else psi_all[0]
