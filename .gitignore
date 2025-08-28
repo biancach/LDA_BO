@@ -19,6 +19,7 @@ data/massachusetts/*
 *.mat
 *.joblib
 *.zip
+*.xlsx
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

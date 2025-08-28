@@ -18,11 +18,12 @@ from scipy.ndimage import binary_erosion
 from scipy.spatial.distance import cdist
 
 ####
-tstep = 13833
-latent_dim = 20
+tstep = 11129
+latent_dim = 30
 acquisition_function = 'LCB'
 save_data = True
 n_iter = 100
+seed = 0
 #####
 
 base_path = f'{project_root}/results/fvcom/bo/constant_flow/{tstep}'
@@ -63,7 +64,7 @@ num_traj = 5
 num_exp = 1000
 
 print('Generating trajectories...')
-np.random.seed(1)
+np.random.seed(seed)
 
 trajectories, trajectories_m, idx0 = {}, {}, {}
 
