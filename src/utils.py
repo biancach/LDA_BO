@@ -145,11 +145,11 @@ def plot_trajectories(ax, data, x, y, trajectories, xmin, xmax, ymin, ymax, vmin
 
     return c
 
-def plot_trajectories_lines(trajectories, color='k', label=''):
+def plot_trajectories_lines(trajectories, color='k', label='', start_label=True):
     for _, key in enumerate(trajectories):
         traj = trajectories[key]
         plt.scatter(traj[:, 0], traj[:, 1], c=color, s=0.5, label=label if key == 0 else '')
-        plt.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if (key == 0 and label=='') else '')
+        plt.plot(traj[0, 0], traj[0, 1], '*b', label='Start' if (start_label and key == 0 and label=='') else '')
 
 def file_naming(point_indices, latent_dim, tstep):
     """
