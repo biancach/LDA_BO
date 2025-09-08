@@ -34,11 +34,6 @@ conda env create -f environment.yml
 conda activate rom-flow
 ```
 
-Alternatively, install dependencies using pip:
-```bash
-pip install -r requirements.txt
-```
-
 ### Data Overview
 
 - `data/fvcom/`: Velocity fields and grid data from the FVCOM ocean model  
